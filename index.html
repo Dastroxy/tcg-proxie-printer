@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TCG Card Print Studio</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+  </head>
+  <body>
+    <div id="controls" class="glass-panel">
+      <h1><span class="accent">TCG</span> Print Studio</h1>
+
+      <div class="panel">
+        <label for="upload">Upload Your Cards</label>
+        <input type="file" id="upload" multiple accept="image/*" />
+
+        <label for="bg">Background</label>
+        <select id="bg">
+          <option value="white" selected>White</option>
+          <option value="black">Black</option>
+          <option value="#f0f0f0">Light Grey</option>
+          <option value="#1a1a1a">Dark Grey</option>
+          <option value="#003366">Navy Blue</option>
+          <option value="#800000">Maroon</option>
+          <option value="custom">Custom…</option>
+        </select>
+
+        <label for="fitMode">Image Fit Mode</label>
+        <select id="fitMode">
+          <option value="inside" selected>Inside Crop Marks</option>
+          <option value="bleed">Full Bleed (to Crop Marks)</option>
+        </select>
+
+        <input
+          type="color"
+          id="bgCustom"
+          value="#ffffff"
+          style="display: none; margin-top: 6px"
+        />
+
+        <label for="layout">Layout</label>
+        <select id="layout">
+          <option value="9" selected>9 cards (3×3)</option>
+          <option value="8">8 cards (4×2, landscape)</option>
+        </select>
+
+        <label for="dpi">Resolution</label>
+        <select id="dpi">
+          <option value="300" selected>300 DPI (Standard)</option>
+          <option value="600">600 DPI (High-Quality)</option>
+        </select>
+
+        <label for="markColor">Crop Mark Colour</label>
+        <select id="markColor">
+          <option value="#00ff00" selected>Bright Green</option>
+          <option value="#ff0000">Bright Red</option>
+          <option value="#0000ff">Bright Blue</option>
+          <option value="#ffff00">Bright Yellow</option>
+          <option value="#000000">Black</option>
+          <option value="#ffffff">White</option>
+        </select>
+      </div>
+
+      <button id="makepdf" class="primary-btn">Generate PDF</button>
+      <button id="resetCopies" class="secondary-btn">Reset Copies</button>
+
+      <div id="status"></div>
+      <footer>© 2026 <span class="accent">Print Studio</span></footer>
+    </div>
+
+    <div id="workspace">
+      <div id="previewWrapper">
+        <div id="preview"></div>
+      </div>
+    </div>
+
+    <div id="working">
+      <div class="loader"></div>
+      <p>Generating high-resolution PDF…</p>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
