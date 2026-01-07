@@ -1,37 +1,41 @@
-// ======== DOM ELEMENTS ========
+// ================= DOM =================
 const preview = document.getElementById("preview");
 const upload = document.getElementById("upload");
+
 const bgSel = document.getElementById("bg");
 const bgCustom = document.getElementById("bgCustom");
 const markSel = document.getElementById("markColor");
+
 const layoutSel = document.getElementById("layout");
 const dpiSel = document.getElementById("dpi");
-const fitSel = document.getElementById("fitMode"); // new
-const status = document.getElementById("status");
-const working = document.getElementById("working");
+const fitSel = document.getElementById("fitMode");
+
+const offsetXInput = document.getElementById("offsetX");
+const offsetYInput = document.getElementById("offsetY");
+
 const resetCopiesBtn = document.getElementById("resetCopies");
 const makepdfBtn = document.getElementById("makepdf");
+const status = document.getElementById("status");
+const working = document.getElementById("working");
 
 let cards = [];
 
-// ======== EVENT HANDLERS ========
+// ================= EVENTS =================
 upload.addEventListener("change", (e) => {
-  [...e.target.files].forEach((f) => {
-    const url = URL.createObjectURL(f);
-    cards.push({ src: url, copies: 1 });
-  });
+  [...e.target.files].forEach((f) =>
+    cards.push({ src: URL.createObjectURL(f), copies: 1 })
+  );
   renderPreview();
 });
-
-[bgSel, bgCustom, markSel, layoutSel, dpiSel, fitSel].forEach((el) =>
-  el.addEventListener("change", renderPreview)
-);
 
 bgSel.addEventListener("change", () => {
-  if (bgSel.value === "custom") bgCustom.style.display = "block";
-  else bgCustom.style.display = "none";
+  bgCustom.style.display = bgSel.value === "custom" ? "block" : "none";
   renderPreview();
 });
+
+[bgCustom, markSel, layoutSel, dpiSel, fitSel].forEach((el) =>
+  el.addEventListener("change", renderPreview)
+);
 
 resetCopiesBtn.addEventListener("click", () => {
   cards.forEach((c) => (c.copies = 1));
@@ -39,59 +43,56 @@ resetCopiesBtn.addEventListener("click", () => {
 });
 
 makepdfBtn.addEventListener("click", async () => {
-  const expanded = getExpandedCards();
-  if (!expanded.length) return alert("No cards uploaded!");
+  const expanded = expandCards();
+  if (!expanded.length) return alert("No cards uploaded");
+
   working.style.display = "flex";
   try {
     await generatePDF(expanded.map((c) => c.src));
-    status.textContent = "✅ PDF ready for download";
-  } catch (err) {
-    console.error(err);
-    status.textContent = "❌ " + err.message;
+    status.textContent = "✅ PDF generated successfully";
+  } catch (e) {
+    console.error(e);
+    status.textContent = "❌ Error generating PDF";
   } finally {
     working.style.display = "none";
   }
 });
 
-// ======== HELPERS ========
-function getExpandedCards() {
-  return cards.flatMap((c) => Array(c.copies).fill(c));
-}
+// ================= HELPERS =================
+const expandCards = () => cards.flatMap((c) => Array(c.copies).fill(c));
 
-// ======== PREVIEW ========
+// ================= PREVIEW (ALWAYS 3×3 PORTRAIT) =================
 function renderPreview() {
   preview.innerHTML = "";
 
-  const A4_W = 210,
-    CARD_W = 63,
-    CARD_H = 88,
-    GAP = 3;
+  const A4_W = 210;
+  const CARD_W = 63;
+  const CARD_H = 88;
+  const GAP = 3;
+
   const scale = preview.clientWidth / A4_W;
   const cardW = CARD_W * scale;
   const cardH = CARD_H * scale;
   const gapPx = GAP * scale;
 
   const cols = 3;
-  const expanded = getExpandedCards();
-  const rows = Math.ceil(expanded.length / cols);
-  const gridWidth = cols * cardW + (cols - 1) * gapPx;
-  const gridHeight = rows * cardH + (rows - 1) * gapPx;
+  const expanded = expandCards();
 
-  let bgValue = bgSel.value === "custom" ? bgCustom.value : bgSel.value;
-  preview.style.background = bgValue === "black" ? "#fff" : bgValue;
+  preview.style.background =
+    bgSel.value === "custom"
+      ? bgCustom.value
+      : bgSel.value === "black"
+      ? "#fff"
+      : bgSel.value;
 
   preview.style.display = "flex";
   preview.style.justifyContent = "center";
   preview.style.alignItems = "center";
 
   const grid = document.createElement("div");
-  grid.style.position = "relative";
   grid.style.display = "grid";
   grid.style.gridTemplateColumns = `repeat(${cols}, ${cardW}px)`;
   grid.style.gap = `${gapPx}px`;
-  grid.style.width = `${gridWidth}px`;
-  grid.style.height = `${gridHeight}px`;
-  grid.style.margin = "auto";
 
   expanded.forEach((cardData) => {
     const card = document.createElement("div");
@@ -103,127 +104,121 @@ function renderPreview() {
     img.src = cardData.src;
     img.style.objectFit = fitSel.value === "bleed" ? "cover" : "contain";
 
-    const overlay = document.createElement("div");
-    overlay.className = "cropmarks";
+    const marks = document.createElement("div");
+    marks.className = "cropmarks";
     ["tl", "tr", "bl", "br"].forEach((p) => {
       const s = document.createElement("span");
       s.className = p;
       s.style.borderColor = markSel.value;
-      overlay.appendChild(s);
+      marks.appendChild(s);
     });
 
     const del = document.createElement("button");
-    del.textContent = "✕";
     del.className = "delete";
+    del.textContent = "✕";
     del.onclick = () => {
-      const idx = cards.indexOf(cardData);
-      if (idx >= 0) cards.splice(idx, 1);
+      const i = cards.indexOf(cardData);
+      if (i > -1) cards.splice(i, 1);
       renderPreview();
     };
 
     const copies = document.createElement("input");
+    copies.className = "copyInput";
     copies.type = "number";
     copies.min = 1;
     copies.value = cardData.copies;
-    copies.className = "copyInput";
     copies.oninput = (e) => {
       cardData.copies = Math.max(1, parseInt(e.target.value) || 1);
       renderPreview();
     };
 
-    card.append(img, overlay, del, copies);
+    card.append(img, marks, del, copies);
     grid.append(card);
   });
 
   preview.append(grid);
 }
 
-// ======== PDF GENERATION ========
+// ================= PDF GENERATION (WITH OFFSET) =================
 async function generatePDF(list) {
   const mmToPt = (mm) => (mm / 25.4) * 72;
   const dpi = parseInt(dpiSel.value) || 300;
   const scale = dpi / 300;
 
-  const A4W = mmToPt(210) * scale;
-  const A4H = mmToPt(297) * scale;
   const cardW = mmToPt(63) * scale;
   const cardH = mmToPt(88) * scale;
   const gap = mmToPt(3) * scale;
-  const bleed = fitSel.value === "bleed" ? mmToPt(1.5) * scale : 0; // 1.5mm bleed all sides
+  const bleed = fitSel.value === "bleed" ? mmToPt(1.5) * scale : 0;
+
+  // OFFSET (mm → pt)
+  const offsetX = mmToPt(parseFloat(offsetXInput.value) || 0) * scale;
+  const offsetY = mmToPt(parseFloat(offsetYInput.value) || 0) * scale;
 
   const layout = layoutSel.value;
   const cols = layout === "8" ? 4 : 3;
   const rows = layout === "8" ? 2 : 3;
-  const perPage = cols * rows;
 
-  const marginTopBottom =
-    layout === "8" ? mmToPt(10) * scale : mmToPt(8) * scale;
-  const marginLeftRight =
-    layout === "8" ? mmToPt(10) * scale : mmToPt(4) * scale;
+  const marginTB = layout === "8" ? mmToPt(10) * scale : mmToPt(8) * scale;
+  const marginLR = layout === "8" ? mmToPt(10) * scale : mmToPt(4) * scale;
 
   const pdf = await PDFLib.PDFDocument.create();
-  const pages = Math.ceil(list.length / perPage);
   let index = 0;
 
-  for (let p = 0; p < pages; p++) {
+  while (index < list.length) {
     const isLandscape = layout === "8";
-    const page = pdf.addPage(isLandscape ? [A4H, A4W] : [A4W, A4H]);
-    const pageW = page.getWidth();
-    const pageH = page.getHeight();
+    const page = pdf.addPage(
+      isLandscape
+        ? [mmToPt(297) * scale, mmToPt(210) * scale]
+        : [mmToPt(210) * scale, mmToPt(297) * scale]
+    );
 
-    // ===== BACKGROUND COLOR =====
+    const pw = page.getWidth();
+    const ph = page.getHeight();
+
+    // ===== UNIFIED BACKGROUND =====
     const bgValue = bgSel.value === "custom" ? bgCustom.value : bgSel.value;
+    let rgb = { r: 1, g: 1, b: 1 };
 
-    let bgRGB = { r: 1, g: 1, b: 1 };
     if (bgValue.startsWith("#")) {
       const n = parseInt(bgValue.slice(1), 16);
-      bgRGB = {
+      rgb = {
         r: ((n >> 16) & 255) / 255,
         g: ((n >> 8) & 255) / 255,
         b: (n & 255) / 255,
       };
     } else if (bgValue === "black") {
-      bgRGB = { r: 0, g: 0, b: 0 };
+      rgb = { r: 0, g: 0, b: 0 };
     }
 
-    if (bgValue === "black") {
-      page.drawRectangle({
-        x: 0,
-        y: 0,
-        width: pageW,
-        height: pageH,
-        color: PDFLib.rgb(1, 1, 1),
-      });
-      page.drawRectangle({
-        x: marginLeftRight,
-        y: marginTopBottom,
-        width: pageW - 2 * marginLeftRight,
-        height: pageH - 2 * marginTopBottom,
-        color: PDFLib.rgb(0, 0, 0),
-      });
-    } else {
-      page.drawRectangle({
-        x: 0,
-        y: 0,
-        width: pageW,
-        height: pageH,
-        color: PDFLib.rgb(bgRGB.r, bgRGB.g, bgRGB.b),
-      });
-    }
+    page.drawRectangle({
+      x: 0,
+      y: 0,
+      width: pw,
+      height: ph,
+      color: PDFLib.rgb(1, 1, 1),
+    });
+    page.drawRectangle({
+      x: marginLR,
+      y: marginTB,
+      width: pw - marginLR * 2,
+      height: ph - marginTB * 2,
+      color: PDFLib.rgb(rgb.r, rgb.g, rgb.b),
+    });
 
-    // ===== GRID =====
+    // ===== GRID (OFFSET APPLIED HERE) =====
     const totalW = cols * cardW + (cols - 1) * gap;
     const totalH = rows * cardH + (rows - 1) * gap;
-    const startX = (pageW - totalW) / 2;
-    const startY = (pageH + totalH) / 2 - cardH;
 
-    let x = startX;
-    let y = startY;
+    let x0 = (pw - totalW) / 2 + offsetX;
+    let y0 = (ph + totalH) / 2 - cardH + offsetY;
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         if (index >= list.length) break;
-        const imgBytes = await fetch(list[index]).then((r) => r.arrayBuffer());
+
+        const imgBytes = await fetch(list[index++]).then((r) =>
+          r.arrayBuffer()
+        );
         let img;
         try {
           img = await pdf.embedJpg(imgBytes);
@@ -232,69 +227,67 @@ async function generatePDF(list) {
         }
 
         page.drawImage(img, {
-          x: x - bleed,
-          y: y - bleed,
+          x: x0 - bleed,
+          y: y0 - bleed,
           width: cardW + bleed * 2,
           height: cardH + bleed * 2,
         });
-        drawMarks(page, x, y, cardW, cardH, markSel.value);
-        index++;
-        x += cardW + gap;
+
+        drawMarks(page, x0, y0, cardW, cardH, markSel.value);
+        x0 += cardW + gap;
       }
-      x = startX;
-      y -= cardH + gap;
+      x0 = (pw - totalW) / 2 + offsetX;
+      y0 -= cardH + gap;
     }
   }
 
-  const pdfBytes = await pdf.save();
-  const blob = new Blob([pdfBytes], { type: "application/pdf" });
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = `TCG_Print_Sheet_${dpi}DPI.pdf`;
-  link.click();
+  const blob = new Blob([await pdf.save()], { type: "application/pdf" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `TCG_Print_${dpi}DPI.pdf`;
+  a.click();
 }
 
-// ======== CROP MARKS ========
+// ================= CROP MARKS =================
 function drawMarks(page, x, y, w, h, colorHex) {
-  const rgb = hexToRgb(colorHex);
-  const c = PDFLib.rgb(rgb.r / 255, rgb.g / 255, rgb.b / 255);
-  const len = (3 / 25.4) * 72;
-  const t = 0.5;
-  function mark(x1, y1, dx, dy) {
+  const n = parseInt(colorHex.slice(1), 16);
+  const c = PDFLib.rgb(
+    ((n >> 16) & 255) / 255,
+    ((n >> 8) & 255) / 255,
+    (n & 255) / 255
+  );
+  const len = (3 / 25.4) * 72,
+    t = 0.5;
+  const m = (x, y, dx, dy) => {
     page.drawLine({
-      start: { x: x1 - len * dx, y: y1 },
-      end: { x: x1, y: y1 },
+      start: { x: x - len * dx, y },
+      end: { x, y },
       thickness: t,
       color: c,
     });
     page.drawLine({
-      start: { x: x1, y: y1 - len * dy },
-      end: { x: x1, y: y1 },
+      start: { x, y: y - len * dy },
+      end: { x, y },
       thickness: t,
       color: c,
     });
     page.drawLine({
-      start: { x: x1, y: y1 },
-      end: { x: x1 + len * dx, y: y1 },
+      start: { x, y },
+      end: { x: x + len * dx, y },
       thickness: t,
       color: c,
     });
     page.drawLine({
-      start: { x: x1, y: y1 },
-      end: { x: x1, y: y1 + len * dy },
+      start: { x, y },
+      end: { x, y: y + len * dy },
       thickness: t,
       color: c,
     });
-  }
-  mark(x, y + h, -1, 1);
-  mark(x + w, y + h, 1, 1);
-  mark(x, y, -1, -1);
-  mark(x + w, y, 1, -1);
-}
-
-function hexToRgb(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  };
+  m(x, y + h, -1, 1);
+  m(x + w, y + h, 1, 1);
+  m(x, y, -1, -1);
+  m(x + w, y, 1, -1);
 }
 
 window.addEventListener("resize", renderPreview);
