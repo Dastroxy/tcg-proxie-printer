@@ -3,13 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TCG Card Print Studio</title>
+    <title>DASTROXY's Proxie Studio</title>
     <link rel="stylesheet" href="style.css" />
     <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
   </head>
   <body>
     <div id="controls" class="glass-panel">
-      <h1><span class="accent">TCG</span> Print Studio</h1>
+      <h1><span class="accent">DASTROXY's</span> Proxie Studio</h1>
 
       <div class="panel">
         <label for="upload">Upload Your Cards</label>
@@ -43,6 +43,12 @@
         <select id="layout">
           <option value="9" selected>9 cards (3×3)</option>
           <option value="8">8 cards (4×2, landscape)</option>
+        </select>
+
+        <label for="paper">Paper Size</label>
+        <select id="paper">
+          <option value="A4" selected>A4</option>
+          <option value="A3">A3 (2 × A4)</option>
         </select>
 
         <label>Print Offset (mm)</label>
